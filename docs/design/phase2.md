@@ -69,7 +69,7 @@ public static <T> List<T> readAll(Path filePath, Type listType)
 | 2 | 파일 미존재 (`!Files.exists(filePath)`) | `Collections.emptyList()` 반환 |
 | 3 | 파일 내용이 빈 문자열 또는 `"[]"` (trim 후 비교) | `Collections.emptyList()` 반환 |
 | 4 | JSON 파싱 실패 | `JsonSyntaxException` 그대로 전파 (래핑 금지) |
-| 5 | JSON은 유효하나 배열이 아닌 형태 (단일 객체 등) | `Collections.emptyList()` 반환 (`fromJson` 결과 `null` 방어) |
+| 5 | JSON은 유효하나 배열이 아닌 형태 (단일 객체 등) | Gson이 `JsonSyntaxException(cause: IllegalStateException)` 발생 → `emptyList()` 반환 |
 | 6 | 정상 JSON 배열 | `GSON.fromJson(content, listType)` 결과 반환 |
 
 파일 읽기: `Files.readString(filePath, StandardCharsets.UTF_8)`
