@@ -6,8 +6,10 @@
 - `C:\reviewer\workspace\과제\DataPersistence\CLAUDE.md` (서브 프로젝트 규칙)
 - `C:\reviewer\workspace\과제\DataPersistence\docs\PRD.md` v1.0.0
 - `C:\reviewer\workspace\과제\DataPersistence\docs\PLAN.md` v1.0.0
+- `C:\reviewer\workspace\과제\DataPersistence\docs\design\phase1.md`
+- `C:\reviewer\workspace\과제\DataPersistence\docs\design\phase2.md` (신규)
 
-**결과**: 문제 4건 발견 (CRITICAL: 1, WARNING: 3, INFO: 1)
+**결과**: 문제 5건 발견 (CRITICAL: 1, WARNING: 3, INFO: 2)
 
 ---
 
@@ -55,6 +57,8 @@
 
 - **권장 조치**: PLAN.md Phase 3의 `JsonSampleRepositoryTest`에 `findById_null_throwsException`, `update_null_throwsException`, `deleteById_null_throwsException` 3개 테스트를 추가한다. PLAN.md Phase 4의 `JsonOrderRepositoryTest`에 `save_null_throwsException`, `findById_null_throwsException`, `update_null_throwsException`, `deleteById_null_throwsException` 4개 테스트를 추가한다.
 
+  > **참고**: PLAN.md는 이후 갱신(Phase 3: 13개, Phase 4: 16개)을 통해 위 누락 항목이 이미 반영되어 있음이 확인되었다. PLAN.md와 phase2.md 기준으로는 이상 없음.
+
 ---
 
 ### [INFO-1] 루트 CLAUDE.md(80%)와 DataPersistence CLAUDE.md(90%) 커버리지 목표 수치 상이
@@ -65,13 +69,52 @@
 
 ---
 
+### [INFO-2] phase2.md의 writeAll 동작 명세 단계 구조 불일치
+
+- **위치**: `docs/design/phase2.md` — 섹션 1.4 `writeAll` 단계 표 vs `docs/PLAN.md` — Phase 2 `writeAll` 동작 명세
+- **설명**: PLAN.md Phase 2는 `writeAll` 동작 명세를 5단계로 기술한다.
+
+  | 단계 | PLAN.md |
+  |------|---------|
+  | 1 | `filePath == null` → `IllegalArgumentException` |
+  | 2 | `items == null` → `IllegalArgumentException` |
+  | 3 | 부모 디렉토리 없으면 `Files.createDirectories(filePath.getParent())` |
+  | 4 | 파일 쓰기: `Files.writeString(filePath, gson.toJson(items), StandardCharsets.UTF_8)` |
+  | 5 | 전체 목록 덮어쓰기 (append 금지) |
+
+  phase2.md 섹션 1.4의 `writeAll` 단계 표는 4단계만 포함하며, 5번째 단계("전체 목록 덮어쓰기, append 금지")가 표 밖에 별도 문장("전체 목록 덮어쓰기 방식이다. `StandardOpenOption.APPEND` 사용 금지.")으로 분리되어 있다.
+
+  의미상 내용은 동일하나 PLAN.md가 명시한 5단계 구조와 phase2.md의 4단계 표 구조가 형식적으로 불일치한다.
+
+- **권장 조치**: phase2.md의 `writeAll` 단계 표에 5번째 행을 추가하여 PLAN.md 구조와 형식적으로도 일치시킨다.
+
+  추가할 행:
+  | 5 | 항상 | 전체 목록 덮어쓰기 방식 (`StandardOpenOption.APPEND` 사용 금지) |
+
+---
+
 ## 통과 항목
 
-- **[A] 교차 참조 일관성**: 문제 1건 (CRITICAL — DataPersistence CLAUDE.md의 OrderStatus.java 누락)
-- **[B] 기술 스택 일관성**: 이상 없음 — Gson 2.11.0, JUnit Jupiter 6.x(`junit-bom:6.0.0`), Java 17, Gradle 8.x가 CLAUDE.md·PRD.md·PLAN.md에서 일관되게 사용됨. CLAUDE.md에 없는 신규 외부 의존성 없음.
-- **[C] 설계 제약 반영**: 이상 없음 — Controller/View 레이어 제외, 비즈니스 로직 미포함 제약이 PLAN.md 전 Phase에서 준수됨.
-- **[D] 완료 기준 명시**: 이상 없음 — Phase 0~6 모두 완료 조건(`- [ ]` 체크리스트) 명시됨. PRD.md 섹션 10도 완료 조건 목록 보유.
-- **[E] 인터페이스 시그니처**: 이상 없음 — PRD.md 섹션 3.1(SampleRepository), 3.2(OrderRepository), 3.3(JsonFileUtil) 메서드 시그니처가 PLAN.md Phase 3·4에서 동일하게 구현 명세에 반영됨.
-- **[F] 테스트 픽스처 전략**: 이상 없음 — PRD.md 섹션 6.4의 `@TempDir` + `@BeforeEach` 초기화 전략이 PLAN.md Phase 2·3·4에서 동일하게 적용됨.
-- **[G] 패키지 루트**: 이상 없음 — `org.ssemi.persistence` 패키지 루트가 DataPersistence CLAUDE.md, PRD.md 섹션 7, PLAN.md 전 Phase에서 일치함.
-- **[H] 영속성 파일 경로**: 이상 없음 — `data/samples.json`, `data/orders.json` 경로가 PRD.md 섹션 4, 섹션 5, PLAN.md Phase 5 전반에서 일관됨.
+| 검증 항목 | 결과 | 비고 |
+|----------|------|------|
+| [A-1] PLAN.md Phase 목록과 실제 파일 일치 | 이상 없음 | phase1.md·phase2.md 모두 존재, PLAN.md 목록과 일치 |
+| [A-2] phase2.md 내 참조 문서 경로 정확성 | 이상 없음 | 헤더 기반 문서 `docs/PLAN.md`, `docs/PRD.md` 참조 정확 |
+| [B-1] 기술 스택 일관성 — 언어 | 이상 없음 | 전 문서 Java 17+ 일치 |
+| [B-2] 기술 스택 일관성 — JSON 라이브러리 | 이상 없음 | 전 문서 Gson 2.11+ 일치 |
+| [B-3] 기술 스택 일관성 — 테스트 프레임워크 | 이상 없음 | DataPersistence CLAUDE.md·PRD.md·phase2.md 모두 JUnit Jupiter 6.x 일치 |
+| [B-4] 기술 스택 일관성 — 커버리지 도구 | 이상 없음 | 전 문서 JaCoCo 90% 이상 일치 |
+| [B-5] 새 외부 의존성 추가 여부 | 이상 없음 | phase2.md에서 CLAUDE.md에 없는 신규 의존성 없음 |
+| [C] 설계 제약 반영 — 수정 금지 위반 | 이상 없음 | phase2.md는 신규 파일 생성만 기술, 기존 파일 수정 없음 |
+| [D] 완료 조건 누락 | 이상 없음 | phase2.md 섹션 5에 완료 조건 4항목 명시, PLAN.md Phase 2 완료 조건 포함 |
+| [E-1] 패키지명 일치 | 이상 없음 | `org.ssemi.persistence.util` 전 문서 일치 |
+| [E-2] readAll 메서드 시그니처 | 이상 없음 | PRD.md 3.3, PLAN.md Phase 2, phase2.md 1.4 일치 |
+| [E-3] writeAll 메서드 시그니처 | 이상 없음 | PRD.md 3.3, PLAN.md Phase 2, phase2.md 1.4 일치 |
+| [E-4] readAll 동작 5단계 내용 | 이상 없음 | PLAN.md와 phase2.md 내용 동일 (단계 수·순서 일치) |
+| [E-5] writeAll 동작 내용 — 의미적 일치 | 이상 없음 | append 금지 포함, 모든 동작 내용 일치 (형식 불일치는 INFO-2) |
+| [E-6] 테스트 케이스 10개 — PRD.md 6.1 대응 | 이상 없음 | PRD.md 7개 + null 3개 = 10개, phase2.md 테스트명·검증 내용 일치 |
+| [E-7] 픽스처 전략 @TempDir | 이상 없음 | PRD.md 6.4, PLAN.md, phase2.md 모두 @TempDir 사용 일치 |
+| [E-8] 선행 Phase 명시 | 이상 없음 | phase2.md 헤더 및 목표 섹션에 Phase 1 완료 필요 명시 |
+| [E-9] 내부 모순 — 문서 간 상충 결정 | 이상 없음 | INFO-2 단계 수 차이 외 상충 결정 없음 |
+| [F] 테스트 픽스처 전략 | 이상 없음 | PRD.md 섹션 6.4의 `@TempDir` 전략이 phase2.md에서 동일하게 적용됨 |
+| [G] 패키지 루트 | 이상 없음 | `org.ssemi.persistence` 패키지 루트가 전 문서 일치 |
+| [H] 영속성 파일 경로 | 이상 없음 | `data/samples.json`, `data/orders.json` 경로 전 문서 일관 |

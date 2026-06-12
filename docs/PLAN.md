@@ -13,13 +13,11 @@
 Phase 0  Gradle 설정
 Phase 1  도메인 모델 구현
 Phase 2  JsonFileUtil 구현 + 테스트
-Phase 3  SampleRepository 구현 + 테스트
-Phase 4  OrderRepository 구현 + 테스트
-Phase 5  Main 시나리오 스크립트
-Phase 6  빌드 & 커버리지 검증
+Phase 3  Repository 계층 구현 + 테스트 (SampleRepository + OrderRepository)
+Phase 4  Main 시나리오 스크립트 + 빌드 & 커버리지 검증
 ```
 
-의존 관계: `Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4 → Phase 5 → Phase 6`
+의존 관계: `Phase 0 → Phase 1 → Phase 2 → Phase 3 → Phase 4`
 
 ---
 
@@ -214,26 +212,34 @@ public class JsonFileUtil {
 | 8 | `readAll_nullPath_throwsException` | `null` 경로 → `IllegalArgumentException` |
 | 9 | `writeAll_nullPath_throwsException` | `null` 경로 → `IllegalArgumentException` |
 | 10 | `writeAll_nullItems_throwsException` | `null` 리스트 → `IllegalArgumentException` |
+| 11 | `readAll_blankFileContent_returnsEmptyList` | 공백만 있는 파일 → 빈 리스트 |
+| 12 | `readAll_emptyArrayContent_returnsEmptyList` | `[]` 내용 파일 → 빈 리스트 |
+| 13 | `readAll_validJsonObject_returnsEmptyList` | 유효 JSON이나 배열 아닌 경우 → 빈 리스트 |
+| 14 | `writeAll_ioError_throwsUncheckedIOException` | 쓰기 거부 경로 → `UncheckedIOException` |
 
 픽스처: 모든 테스트에 `@TempDir Path tempDir` 주입.
 
 ### 완료 조건
 
-- [ ] `JsonFileUtilTest` 10개 테스트 모두 통과
+- [ ] `JsonFileUtilTest` 14개 테스트 모두 통과
 - [ ] `util` 패키지 라인 커버리지 90% 이상
 
 ---
 
-## Phase 3 — SampleRepository 구현 + 테스트
+## Phase 3 — Repository 계층 구현 + 테스트
 
-**목표**: `SampleRepository` 인터페이스를 정의하고 `JsonSampleRepository` 구현체를 작성한다.
+**목표**: `SampleRepository`·`OrderRepository` 인터페이스와 `JsonSampleRepository`·`JsonOrderRepository`
+구현체를 함께 작성한다. 두 Repository는 구조가 동일하며 `OrderRepository`에 `findByStatus`가 추가된다.
 
 ### 생성 파일
 
 ```
 src/main/java/org/ssemi/persistence/repository/SampleRepository.java
 src/main/java/org/ssemi/persistence/repository/JsonSampleRepository.java
+src/main/java/org/ssemi/persistence/repository/OrderRepository.java
+src/main/java/org/ssemi/persistence/repository/JsonOrderRepository.java
 src/test/java/org/ssemi/persistence/repository/JsonSampleRepositoryTest.java
+src/test/java/org/ssemi/persistence/repository/JsonOrderRepositoryTest.java
 ```
 
 ### 3-1. `SampleRepository.java` 인터페이스
@@ -255,20 +261,38 @@ public interface SampleRepository {
 | 항목 | 내용 |
 |------|------|
 | 생성자 | `JsonSampleRepository(Path filePath)` — 파일 경로를 외부에서 주입 (테스트 격리용) |
-| `save` | `findAll()`로 로드 → 중복 ID 검사(`IllegalArgumentException`) → 추가 → `JsonFileUtil.writeAll` |
-| `findById` | `findAll()` 스트림 필터 → `Optional` 반환 |
-| `findAll` | `JsonFileUtil.readAll(filePath, sampleListType)` |
-| `update` | `findAll()` → ID 존재 검사(`NoSuchElementException`) → 교체 → `writeAll` |
-| `deleteById` | `findAll()` → ID 존재 검사(`NoSuchElementException`) → 제거 → `writeAll` |
-| null 검사 | 각 메서드 진입부에서 인자 null 여부 확인 → `IllegalArgumentException` |
+| `save` | `loadMutable()`로 로드 → 중복 ID 검사(`IllegalArgumentException`) → 추가 → `JsonFileUtil.writeAll` |
+| `findById` | `readAll()` 스트림 필터 → `Optional` 반환 |
+| `findAll` | `JsonFileUtil.readAll(filePath, SAMPLE_LIST_TYPE)` |
+| `update` | `loadMutable()` → ID 존재 검사(`NoSuchElementException`) → 교체(`set`) → `writeAll` |
+| `deleteById` | `loadMutable()` → ID 존재 검사(`NoSuchElementException`) → 제거(`removeIf`) → `writeAll` |
+| null 검사 | 각 메서드 진입부 → `IllegalArgumentException` (update/save(null)도 IAE로 통일) |
+| `loadMutable()` | `new ArrayList<>(readAll())` — `emptyList()`(수정 불가) 방어용 내부 헬퍼 |
 
-`Type` 획득:
+### 3-3. `OrderRepository.java` 인터페이스
+
 ```java
-private static final Type SAMPLE_LIST_TYPE =
-    new TypeToken<List<Sample>>() {}.getType();
+package org.ssemi.persistence.repository;
+
+public interface OrderRepository {
+    void save(Order order);
+    Optional<Order> findById(String orderId);
+    List<Order> findAll();
+    List<Order> findByStatus(OrderStatus status);
+    void update(Order order);
+    void deleteById(String orderId);
+}
 ```
 
-### 3-3. `JsonSampleRepositoryTest.java` 테스트 케이스
+### 3-4. `JsonOrderRepository.java` 구현 명세
+
+`JsonSampleRepository`와 동일한 구조. 추가 메서드:
+
+| 메서드 | 구현 |
+|--------|------|
+| `findByStatus(OrderStatus status)` | `status == null` → `IllegalArgumentException`; `findAll()` 스트림 필터 → 리스트 반환 |
+
+### 3-5. `JsonSampleRepositoryTest.java` 테스트 케이스 (13개)
 
 | # | 테스트명 | 검증 내용 |
 |---|---------|-----------|
@@ -284,60 +308,9 @@ private static final Type SAMPLE_LIST_TYPE =
 | 10 | `save_null_throwsException` | `save(null)` → `IllegalArgumentException` |
 | 11 | `findById_null_throwsException` | `findById(null)` → `IllegalArgumentException` |
 | 12 | `deleteById_null_throwsException` | `deleteById(null)` → `IllegalArgumentException` |
-| 13 | `update_null_throwsException` | `update(null)` → `IllegalArgumentException` 또는 `NullPointerException` |
+| 13 | `update_null_throwsException` | `update(null)` → `IllegalArgumentException` |
 
-픽스처: `@TempDir Path tempDir`; `@BeforeEach`에서 `new JsonSampleRepository(tempDir.resolve("samples.json"))`.
-
-### 완료 조건
-
-- [ ] `JsonSampleRepositoryTest` 13개 테스트 모두 통과
-- [ ] 영속성 테스트(#9) — 파일 재시작 시나리오 통과
-
----
-
-## Phase 4 — OrderRepository 구현 + 테스트
-
-**목표**: `OrderRepository` 인터페이스를 정의하고 `JsonOrderRepository` 구현체를 작성한다.
-Phase 3과 구조가 동일하며, `findByStatus` 메서드가 추가된다.
-
-### 생성 파일
-
-```
-src/main/java/org/ssemi/persistence/repository/OrderRepository.java
-src/main/java/org/ssemi/persistence/repository/JsonOrderRepository.java
-src/test/java/org/ssemi/persistence/repository/JsonOrderRepositoryTest.java
-```
-
-### 4-1. `OrderRepository.java` 인터페이스
-
-```java
-package org.ssemi.persistence.repository;
-
-public interface OrderRepository {
-    void save(Order order);
-    Optional<Order> findById(String orderId);
-    List<Order> findAll();
-    List<Order> findByStatus(OrderStatus status);
-    void update(Order order);
-    void deleteById(String orderId);
-}
-```
-
-### 4-2. `JsonOrderRepository.java` 구현 명세
-
-Phase 3과 동일한 구조. 추가 메서드:
-
-| 메서드 | 구현 |
-|--------|------|
-| `findByStatus(OrderStatus status)` | `status == null` → `IllegalArgumentException`; `findAll()` 스트림에서 `status` 일치 필터 → 리스트 반환 |
-
-`Type` 획득:
-```java
-private static final Type ORDER_LIST_TYPE =
-    new TypeToken<List<Order>>() {}.getType();
-```
-
-### 4-3. `JsonOrderRepositoryTest.java` 테스트 케이스
+### 3-6. `JsonOrderRepositoryTest.java` 테스트 케이스 (16개)
 
 | # | 테스트명 | 검증 내용 |
 |---|---------|-----------|
@@ -356,21 +329,20 @@ private static final Type ORDER_LIST_TYPE =
 | 13 | `save_null_throwsException` | `save(null)` → `IllegalArgumentException` |
 | 14 | `findById_null_throwsException` | `findById(null)` → `IllegalArgumentException` |
 | 15 | `deleteById_null_throwsException` | `deleteById(null)` → `IllegalArgumentException` |
-| 16 | `update_null_throwsException` | `update(null)` → `IllegalArgumentException` 또는 `NullPointerException` |
+| 16 | `update_null_throwsException` | `update(null)` → `IllegalArgumentException` |
 
-픽스처: `@TempDir Path tempDir`; `@BeforeEach`에서 `new JsonOrderRepository(tempDir.resolve("orders.json"))`.
+픽스처: `@TempDir Path tempDir`; `@BeforeEach`에서 각 Repository를 `tempDir.resolve("파일명.json")`으로 초기화.
 
 ### 완료 조건
 
-- [ ] `JsonOrderRepositoryTest` 16개 테스트 모두 통과
+- [ ] `JsonSampleRepositoryTest` 13개, `JsonOrderRepositoryTest` 16개 — 총 29개 모두 통과
 - [ ] `repository` 패키지 라인 커버리지 90% 이상
 
 ---
 
-## Phase 5 — Main 시나리오 스크립트
+## Phase 4 — Main 시나리오 스크립트 + 빌드 & 커버리지 검증
 
-**목표**: `./gradlew run`으로 CRUD 전 과정을 콘솔에서 시각적으로 확인한다.
-비즈니스 로직 없이 Repository 호출 흐름만 시연한다.
+**목표**: `./gradlew run`으로 CRUD 전 과정을 콘솔에서 시각적으로 확인하고, 전체 빌드와 커버리지 목표를 수치로 검증한다.
 
 ### 생성 파일
 
@@ -401,43 +373,26 @@ src/main/java/org/ssemi/persistence/Main.java
 16. 프로그램 재실행 시 data/*.json에서 데이터 복원됨을 안내 메시지 출력
 ```
 
-### 완료 조건
-
-- [ ] `./gradlew run` 정상 실행, 각 단계 출력 확인
-- [ ] `data/samples.json`, `data/orders.json` 파일 생성 확인
-
----
-
-## Phase 6 — 빌드 & 커버리지 검증
-
-**목표**: 전체 빌드 통과 및 커버리지 목표(90%)를 수치로 확인한다.
-
-### 실행 명령
+### 빌드 & 커버리지 검증 명령
 
 ```bash
-# 전체 빌드 (컴파일 + 테스트 + JaCoCo 리포트)
 ./gradlew build
-
-# 커버리지 리포트 단독 생성
 ./gradlew jacocoTestReport
-
-# 커버리지 임계값 검증 (90% 미만 시 빌드 실패)
 ./gradlew jacocoTestCoverageVerification
 ```
 
-### 리포트 위치
-
+리포트 위치:
 ```
-build/reports/tests/test/index.html     ← JUnit 테스트 결과
-build/reports/jacoco/test/html/index.html ← JaCoCo 커버리지
+build/reports/tests/test/index.html
+build/reports/jacoco/test/html/index.html
 ```
 
 ### 완료 조건
 
+- [ ] `./gradlew run` 정상 실행, 각 단계 출력 확인
 - [ ] `./gradlew build` — BUILD SUCCESSFUL
-- [ ] JUnit 전체 테스트(63개 이상) 통과
-- [ ] `util` 패키지 라인 커버리지 90% 이상
-- [ ] `repository` 패키지 라인 커버리지 90% 이상
+- [ ] JUnit 전체 테스트(63개) 통과
+- [ ] `util`·`repository` 패키지 라인 커버리지 90% 이상
 - [ ] PRD.md 섹션 10 완료 조건 전 항목 체크
 
 ---
@@ -453,20 +408,18 @@ Phase 1  model/OrderStatus.java                           (신규)
          test/.../model/SampleTest.java                   (신규, 10개 테스트)
          test/.../model/OrderTest.java                    (신규, 10개 테스트)
 
-Phase 2  util/JsonFileUtil.java                            (신규)
-         test/.../util/JsonFileUtilTest.java               (신규, 14개 테스트)
+Phase 2  util/JsonFileUtil.java                           (신규)
+         test/.../util/JsonFileUtilTest.java              (신규, 14개 테스트)
 
-Phase 3  repository/SampleRepository.java                  (신규)
-         repository/JsonSampleRepository.java              (신규)
+Phase 3  repository/SampleRepository.java                 (신규)
+         repository/JsonSampleRepository.java             (신규)
+         repository/OrderRepository.java                  (신규)
+         repository/JsonOrderRepository.java              (신규)
          test/.../repository/JsonSampleRepositoryTest.java (신규, 13개 테스트)
-
-Phase 4  repository/OrderRepository.java                   (신규)
-         repository/JsonOrderRepository.java               (신규)
          test/.../repository/JsonOrderRepositoryTest.java  (신규, 16개 테스트)
 
-Phase 5  Main.java                                        (신규)
-
-Phase 6  (검증만, 파일 변경 없음)
+Phase 4  Main.java                                        (신규)
+         (검증만, 추가 파일 변경 없음)
 ```
 
 > 테스트 총 합계: model(20) + util(14) + repository(13+16) = **63개**

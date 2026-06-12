@@ -83,7 +83,7 @@ public enum OrderStatus {
 | `save(Order)` | 신규 주문 저장, 중복 ID 시 예외 | `IllegalArgumentException` — 중복 orderId |
 | `findById(String)` | ID로 단건 조회 | `Optional.empty()` — 없을 경우 |
 | `findAll()` | 전체 주문 목록 반환 | 빈 리스트 반환 |
-| `findByStatus(OrderStatus)` | 상태별 주문 목록 반환 | 빈 리스트 반환 |
+| `findByStatus(OrderStatus)` | 상태별 주문 목록 반환 | 빈 리스트 반환; `null` 인자 시 `IllegalArgumentException` |
 | `update(Order)` | ID 기준 덮어쓰기 | `NoSuchElementException` — 없는 ID |
 | `deleteById(String)` | ID 기준 삭제 | `NoSuchElementException` — 없는 ID |
 
