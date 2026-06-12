@@ -110,6 +110,10 @@ src/main/java/org/ssemi/persistence/model/
 ├── OrderStatus.java
 ├── Sample.java
 └── Order.java
+
+src/test/java/org/ssemi/persistence/model/
+├── SampleTest.java   (10개 테스트)
+└── OrderTest.java    (10개 테스트)
 ```
 
 ### 1-1. `OrderStatus.java`
@@ -155,7 +159,7 @@ public enum OrderStatus {
 ### 완료 조건
 
 - [ ] `./gradlew compileJava` — 오류 없음
-- [ ] 기본 생성자로 인스턴스 생성 후 setter/getter 동작 확인 (수동 또는 테스트)
+- [ ] `SampleTest` 10개, `OrderTest` 10개 — `./gradlew test` 통과
 
 ---
 
@@ -431,7 +435,7 @@ build/reports/jacoco/test/html/index.html ← JaCoCo 커버리지
 ### 완료 조건
 
 - [ ] `./gradlew build` — BUILD SUCCESSFUL
-- [ ] JUnit 전체 테스트(39개 이상) 통과
+- [ ] JUnit 전체 테스트(59개 이상) 통과
 - [ ] `util` 패키지 라인 커버리지 90% 이상
 - [ ] `repository` 패키지 라인 커버리지 90% 이상
 - [ ] PRD.md 섹션 10 완료 조건 전 항목 체크
@@ -446,6 +450,8 @@ Phase 0  build.gradle                                     (수정)
 Phase 1  model/OrderStatus.java                           (신규)
          model/Sample.java                                (신규)
          model/Order.java                                 (신규)
+         test/.../model/SampleTest.java                   (신규, 10개 테스트)
+         test/.../model/OrderTest.java                    (신규, 10개 테스트)
 
 Phase 2  util/JsonFileUtil.java                            (신규)
          test/.../util/JsonFileUtilTest.java               (신규, 10개 테스트)
@@ -462,6 +468,8 @@ Phase 5  Main.java                                        (신규)
 
 Phase 6  (검증만, 파일 변경 없음)
 ```
+
+> 테스트 총 합계: model(20) + util(10) + repository(13+16) = **59개**
 
 ---
 

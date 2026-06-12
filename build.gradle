@@ -1,20 +1,73 @@
 plugins {
     id 'java'
+    id 'application'
+    id 'jacoco'
 }
 
-group = 'org.example'
+group = 'org.ssemi'
 version = '1.0-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+application {
+    mainClass = 'org.ssemi.persistence.Main'
+}
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
+    implementation 'com.google.code.gson:gson:2.11.0'
+
     testImplementation platform('org.junit:junit-bom:6.0.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+// Windows CP949 환경에서 Gradle Worker @args 파일 내 한글 경로가 깨지는 문제 우회:
+// 컴파일된 클래스를 시스템 임시 디렉터리(ASCII 경로)로 복사 후 classpath 교체
+def sysTmp           = System.getProperty('java.io.tmpdir')
+def asciiTestClasses = new File(sysTmp, 'datapersistence-classes/test')
+def asciiMainClasses = new File(sysTmp, 'datapersistence-classes/main')
+
+task copyTestClassesToAsciiPath(type: Copy, dependsOn: [compileTestJava, compileJava]) {
+    from sourceSets.test.output.classesDirs
+    into asciiTestClasses
+}
+
+task copyMainClassesToAsciiPath(type: Copy, dependsOn: compileJava) {
+    from sourceSets.main.output.classesDirs
+    into asciiMainClasses
+}
+
 test {
+    dependsOn copyTestClassesToAsciiPath, copyMainClassesToAsciiPath
     useJUnitPlatform()
+    classpath = files(asciiTestClasses, asciiMainClasses) +
+                configurations.testRuntimeClasspath
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.90
+            }
+        }
+    }
 }
