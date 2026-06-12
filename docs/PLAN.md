@@ -353,24 +353,23 @@ src/main/java/org/ssemi/persistence/Main.java
 ### 시나리오 순서
 
 ```
-1. JsonSampleRepository, JsonOrderRepository 초기화 (data/ 경로)
-2. Sample 3개 save (S001, S002, S003)
-3. findAll → 콘솔 출력
-4. findById("S002") → 출력
-5. update S002 (stock 변경)
-6. findById("S002") → 변경 확인 출력
-7. deleteById("S003")
-8. findAll → S003 제거 확인
+1. Sample 3개 save (S001, S002, S003)
+2. findAll → 콘솔 출력
+3. findById("S002") → 출력
+4. update S002 (stock 변경)
+5. findById("S002") → 변경 확인 출력
+6. deleteById("S003")
+7. findAll → S003 제거 확인
 
-9. Order 3개 save (O001: RESERVED, O002: PRODUCING, O003: CONFIRMED)
-10. findAll → 콘솔 출력
-11. findByStatus(RESERVED) → O001만 출력
-12. update O001 status → CONFIRMED
-13. findByStatus(RESERVED) → 빈 리스트 출력
-14. deleteById("O002")
-15. findAll → O002 제거 확인
+8. Order 3개 save (O001: RESERVED, O002: PRODUCING, O003: CONFIRMED)
+9. findAll → 콘솔 출력
+10. findByStatus(RESERVED) → O001만 출력
+11. update O001 status → CONFIRMED
+12. findByStatus(RESERVED) → 빈 리스트 출력
+13. deleteById("O002")
+14. findAll → O002 제거 확인
 
-16. 프로그램 재실행 시 data/*.json에서 데이터 복원됨을 안내 메시지 출력
+15. data/*.json 파일 경로 안내 메시지 출력
 ```
 
 ### 빌드 & 커버리지 검증 명령
