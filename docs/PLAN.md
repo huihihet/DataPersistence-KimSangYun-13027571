@@ -435,7 +435,7 @@ build/reports/jacoco/test/html/index.html ← JaCoCo 커버리지
 ### 완료 조건
 
 - [ ] `./gradlew build` — BUILD SUCCESSFUL
-- [ ] JUnit 전체 테스트(59개 이상) 통과
+- [ ] JUnit 전체 테스트(63개 이상) 통과
 - [ ] `util` 패키지 라인 커버리지 90% 이상
 - [ ] `repository` 패키지 라인 커버리지 90% 이상
 - [ ] PRD.md 섹션 10 완료 조건 전 항목 체크
@@ -454,7 +454,7 @@ Phase 1  model/OrderStatus.java                           (신규)
          test/.../model/OrderTest.java                    (신규, 10개 테스트)
 
 Phase 2  util/JsonFileUtil.java                            (신규)
-         test/.../util/JsonFileUtilTest.java               (신규, 10개 테스트)
+         test/.../util/JsonFileUtilTest.java               (신규, 14개 테스트)
 
 Phase 3  repository/SampleRepository.java                  (신규)
          repository/JsonSampleRepository.java              (신규)
@@ -469,7 +469,7 @@ Phase 5  Main.java                                        (신규)
 Phase 6  (검증만, 파일 변경 없음)
 ```
 
-> 테스트 총 합계: model(20) + util(10) + repository(13+16) = **59개**
+> 테스트 총 합계: model(20) + util(14) + repository(13+16) = **63개**
 
 ---
 
